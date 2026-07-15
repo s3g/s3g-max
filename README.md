@@ -23,6 +23,8 @@ Highlights:
 
 - Distance and cosine panning methods.
 - AED and XYZ source control.
+- Inside-source modes for distance behavior inside the unit speaker perimeter.
+- Smooth negative-elevation rolloff when the layout has no real lower speakers.
 - Preset speaker layouts including quad, quad+OH, domes, rings, surround
   formats, dodeca12, and icosahedron20.
 - V8UI field display that follows the object state.
@@ -44,6 +46,8 @@ Highlights:
 - `s3g.dbappan~` uses distance-based amplitude panning.
 - `s3g.lbappan~` uses layer/local-lobe amplitude panning.
 - `s3g.vbappan~` uses vector-base amplitude panning.
+- DBAP shares the same lower-hemisphere rolloff behavior as `s3g.layoutpan~`
+  when a layout has no real lower speakers.
 - LBAP and VBAP use the shared topology-aware solver from `s3g-dsp`.
 - For 2D layouts, elevation becomes a smooth level change into silent
   imaginary top/bottom speakers instead of a no-op.
