@@ -1,8 +1,8 @@
 build*/
 _deps/
+package/docs/
 *.xcodeproj
 *.xcworkspace
 *.mxo
 *.mxe64
 .DS_Store
-

@@ -120,7 +120,6 @@ package/externals/     Built .mxo bundles
 package/help/          Max help patchers
 package/javascript/    V8UI display scripts
 package/patchers/      Max-test patchers
-package/docs/          Additional package docs
 scripts/               Build and install helpers
 ```
 
@@ -138,8 +137,6 @@ from RNBO exports.
 Shared C++ DSP behavior is covered by the smoke tests in `s3g-dsp`. Max-host
 behavior can be checked with Cycling '74's `max-test` package using the patchers
 in `package/patchers/`.
-
-See [`package/docs/testing.md`](package/docs/testing.md).
 
 ## License
 
