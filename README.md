@@ -1,6 +1,6 @@
 # s3g-max
 
-Native Max/MSP externals for spatial audio, ambisonic decoding, subwoofer
+Max/MSP externals for spatial audio, ambisonic decoding, subwoofer
 routing, and multichannel utility work.
 
 `s3g-max` is a Max package that builds `.mxo` externals from the shared C++
