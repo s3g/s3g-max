@@ -9,7 +9,7 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 236.0, 334.0, 1450.0, 800.0 ],
+        "rect": [ 236.0, 318.0, 1450.0, 800.0 ],
         "showrootpatcherontab": 0,
         "showontab": 0,
         "boxes": [
@@ -29,9 +29,20 @@
                             "modernui": 1
                         },
                         "classnamespace": "box",
-                        "rect": [ 0.0, 26.0, 1450.0, 774.0 ],
+                        "rect": [ 236.0, 344.0, 1450.0, 774.0 ],
                         "showontab": 1,
                         "boxes": [
+                            {
+                                "box": {
+                                    "id": "obj-2",
+                                    "maxclass": "message",
+                                    "numinlets": 2,
+                                    "numoutlets": 1,
+                                    "outlettype": [ "" ],
+                                    "patching_rect": [ 1029.0, 103.0, 83.0, 22.0 ],
+                                    "text": "layout cube41"
+                                }
+                            },
                             {
                                 "box": {
                                     "id": "title",
@@ -104,7 +115,7 @@
                             {
                                 "box": {
                                     "id": "menu",
-                                    "items": [ "cube8", ",", "cube17", ",", "custom", ",", "dodeca12", ",", "dome24", ",", "dome25", ",", "double16", ",", "double20", ",", "icosahedron20", ",", "octo", ",", "quad", ",", "quad+oh", ",", "ring12", ",", "ring16", ",", "5.0", ",", "5.0.2", ",", "5.0.4", ",", "6.0", ",", "7.0", ",", "7.0.2", ",", "7.0.4", ",", "7.0.6", ",", "9.0", ",", "9.0.2", ",", "9.0.4", ",", "9.0.6", ",", "11.0.8" ],
+                                    "items": [ "cube8", ",", "cube17", ",", "dodeca12", ",", "dome24", ",", "dome25", ",", "double16", ",", "double20", ",", "icosahedron20", ",", "octo", ",", "quad", ",", "quad+oh", ",", "ring12", ",", "ring16", ",", "5.0", ",", "5.0.2", ",", "5.0.4", ",", "6.0", ",", "7.0", ",", "7.0.2", ",", "7.0.4", ",", "7.0.6", ",", "9.0", ",", "9.0.2", ",", "9.0.4", ",", "9.0.6", ",", "11.0.8" ],
                                     "maxclass": "umenu",
                                     "numinlets": 1,
                                     "numoutlets": 3,
@@ -126,13 +137,13 @@
                             },
                             {
                                 "box": {
-                                    "id": "layout_custom",
+                                    "id": "layout_cube8_alt",
                                     "maxclass": "message",
                                     "numinlets": 2,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 835.0, 190.0, 132.0, 22.0 ],
-                                    "text": "layout custom"
+                                    "text": "layout cube8"
                                 }
                             },
                             {
@@ -509,7 +520,7 @@
                             {
                                 "patchline": {
                                     "destination": [ "v8", 0 ],
-                                    "source": [ "layout_custom", 0 ]
+                                    "source": [ "layout_cube8_alt", 0 ]
                                 }
                             },
                             {
@@ -684,6 +695,12 @@
                             },
                             {
                                 "patchline": {
+                                    "destination": [ "v8", 0 ],
+                                    "source": [ "obj-2", 0 ]
+                                }
+                            },
+                            {
+                                "patchline": {
                                     "destination": [ "layout_cube17", 0 ],
                                     "source": [ "sel", 2 ]
                                 }
@@ -696,7 +713,7 @@
                             },
                             {
                                 "patchline": {
-                                    "destination": [ "layout_custom", 0 ],
+                                    "destination": [ "layout_cube8_alt", 0 ],
                                     "source": [ "sel", 0 ]
                                 }
                             },
@@ -807,7 +824,7 @@
                             "modernui": 1
                         },
                         "classnamespace": "box",
-                        "rect": [ 236.0, 360.0, 1450.0, 774.0 ],
+                        "rect": [ 0.0, 26.0, 1450.0, 774.0 ],
                         "showontab": 1,
                         "boxes": [
                             {
@@ -893,7 +910,7 @@
                             {
                                 "box": {
                                     "id": "menu",
-                                    "items": [ "cube8", ",", "cube17", ",", "custom", ",", "dodeca12", ",", "dome24", ",", "dome25", ",", "double16", ",", "double20", ",", "icosahedron20", ",", "octo", ",", "quad", ",", "quad+oh", ",", "ring12", ",", "ring16", ",", "5.0", ",", "5.0.2", ",", "5.0.4", ",", "6.0", ",", "7.0", ",", "7.0.2", ",", "7.0.4", ",", "7.0.6", ",", "9.0", ",", "9.0.2", ",", "9.0.4", ",", "9.0.6", ",", "11.0.8" ],
+                                    "items": [ "cube8", ",", "cube17", ",", "dodeca12", ",", "dome24", ",", "dome25", ",", "double16", ",", "double20", ",", "icosahedron20", ",", "octo", ",", "quad", ",", "quad+oh", ",", "ring12", ",", "ring16", ",", "5.0", ",", "5.0.2", ",", "5.0.4", ",", "6.0", ",", "7.0", ",", "7.0.2", ",", "7.0.4", ",", "7.0.6", ",", "9.0", ",", "9.0.2", ",", "9.0.4", ",", "9.0.6", ",", "11.0.8" ],
                                     "maxclass": "umenu",
                                     "numinlets": 1,
                                     "numoutlets": 3,
@@ -977,13 +994,13 @@
                             },
                             {
                                 "box": {
-                                    "id": "layout_custom",
+                                    "id": "layout_cube8_alt",
                                     "maxclass": "message",
                                     "numinlets": 2,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 835.0, 190.0, 132.0, 22.0 ],
-                                    "text": "layout custom"
+                                    "text": "layout cube8"
                                 }
                             },
                             {
@@ -1175,13 +1192,13 @@
                             },
                             {
                                 "box": {
-                                    "id": "m_shape",
+                                    "id": "m_dump_alt",
                                     "maxclass": "message",
                                     "numinlets": 2,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 1323.0, 402.0, 104.0, 22.0 ],
-                                    "text": "shape dome 16"
+                                    "text": "dump"
                                 }
                             },
                             {
@@ -1389,7 +1406,7 @@
                             {
                                 "patchline": {
                                     "destination": [ "pan", 0 ],
-                                    "source": [ "layout_custom", 0 ]
+                                    "source": [ "layout_cube8_alt", 0 ]
                                 }
                             },
                             {
@@ -1499,7 +1516,7 @@
                             {
                                 "patchline": {
                                     "destination": [ "pan", 0 ],
-                                    "source": [ "m_shape", 0 ]
+                                    "source": [ "m_dump", 0 ]
                                 }
                             },
                             {
@@ -1568,7 +1585,7 @@
                             },
                             {
                                 "patchline": {
-                                    "destination": [ "layout_custom", 0 ],
+                                    "destination": [ "layout_cube8_alt", 0 ],
                                     "source": [ "sel", 0 ]
                                 }
                             },
@@ -2261,7 +2278,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 30.0, 18.0, 760.0, 20.0 ],
-                                    "text": "custom fixed layout tab"
+                                    "text": "curated cube8 layout tab"
                                 }
                             },
                             {
@@ -2310,7 +2327,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 910.0, 82.0, 120.0, 22.0 ],
-                                    "text": "layout custom"
+                                    "text": "layout cube8"
                                 }
                             },
                             {
@@ -2321,7 +2338,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 1040.0, 82.0, 150.0, 22.0 ],
-                                    "text": "shape dome 16, dump"
+                                    "text": "dump"
                                 }
                             },
                             {
@@ -2354,7 +2371,7 @@
                                     "numoutlets": 17,
                                     "outlettype": [ "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "signal", "" ],
                                     "patching_rect": [ 835.0, 175.0, 264.0, 22.0 ],
-                                    "text": "s3g.layoutpan~ 8 16 custom"
+                                    "text": "s3g.layoutpan~ 8 8 cube8"
                                 }
                             },
                             {
@@ -2530,7 +2547,7 @@
                         "toolbaradditions": [ "Data Knot", "Vizzie" ]
                     },
                     "patching_rect": [ 570.0, 30.0, 120.0, 22.0 ],
-                    "text": "p custom"
+                    "text": "p cube8"
                 }
             },
             {

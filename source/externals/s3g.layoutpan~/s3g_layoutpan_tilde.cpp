@@ -43,6 +43,7 @@ struct t_s3g_layoutpan {
     double globalel = 0.0;
     double globaldist = 0.0;
     double diffusion = 0.35;
+    double inside = 0.0;
     double output = -6.0;
     double selected = 1.0;
     double azimuth = -30.0;
@@ -126,12 +127,14 @@ uint32_t index_from_one_based(double value, uint32_t maxCount)
 s3g::LayoutPannerPreset preset_from_name(t_symbol* sym, s3g::LayoutPannerPreset fallback)
 {
     const auto s = lower_name(sym);
-    if (s == "custom") return s3g::LayoutPannerPreset::Custom;
     if (s == "cube8" || s == "cube") return s3g::LayoutPannerPreset::Cube8;
     if (s == "cube17") return s3g::LayoutPannerPreset::Cube17;
+    if (s == "cube41") return s3g::LayoutPannerPreset::Cube41;
+    if (s == "lpac41") return s3g::LayoutPannerPreset::Lpac41;
     if (s == "dodeca12" || s == "dodeca") return s3g::LayoutPannerPreset::Dodeca12;
     if (s == "dome24" || s == "dome") return s3g::LayoutPannerPreset::Dome24NoOverhead;
     if (s == "dome25") return s3g::LayoutPannerPreset::Dome25;
+    if (s == "srst25") return s3g::LayoutPannerPreset::Srst25;
     if (s == "double16" || s == "doubl16" || s == "dblring16" || s == "dbl-ring16" || s == "double-ring16") return s3g::LayoutPannerPreset::DoubleRing16;
     if (s == "double20" || s == "dblring20" || s == "dbl-ring20" || s == "double-ring20") return s3g::LayoutPannerPreset::DoubleRing20;
     if (s == "icosahedron20" || s == "icosa20" || s == "ico20") return s3g::LayoutPannerPreset::Icosahedron20;
@@ -156,10 +159,50 @@ s3g::LayoutPannerPreset preset_from_name(t_symbol* sym, s3g::LayoutPannerPreset 
     return fallback;
 }
 
+constexpr std::array<s3g::LayoutPannerPreset, 29> kCuratedLayouts {
+    s3g::LayoutPannerPreset::Cube8,
+    s3g::LayoutPannerPreset::Cube17,
+    s3g::LayoutPannerPreset::Dodeca12,
+    s3g::LayoutPannerPreset::Dome24NoOverhead,
+    s3g::LayoutPannerPreset::Dome25,
+    s3g::LayoutPannerPreset::DoubleRing16,
+    s3g::LayoutPannerPreset::DoubleRing20,
+    s3g::LayoutPannerPreset::OctophonicRing,
+    s3g::LayoutPannerPreset::Quad,
+    s3g::LayoutPannerPreset::QuadOverhead6,
+    s3g::LayoutPannerPreset::Ring12,
+    s3g::LayoutPannerPreset::Ring16,
+    s3g::LayoutPannerPreset::FiveZero,
+    s3g::LayoutPannerPreset::SixZero,
+    s3g::LayoutPannerPreset::SevenZero,
+    s3g::LayoutPannerPreset::FiveZeroTwo,
+    s3g::LayoutPannerPreset::SevenZeroTwo,
+    s3g::LayoutPannerPreset::FiveZeroFour,
+    s3g::LayoutPannerPreset::SevenZeroFour,
+    s3g::LayoutPannerPreset::NineZero,
+    s3g::LayoutPannerPreset::NineZeroTwo,
+    s3g::LayoutPannerPreset::NineZeroFour,
+    s3g::LayoutPannerPreset::NineZeroSix,
+    s3g::LayoutPannerPreset::SevenZeroSix,
+    s3g::LayoutPannerPreset::ElevenZeroEight,
+    s3g::LayoutPannerPreset::Icosahedron20,
+    s3g::LayoutPannerPreset::Cube41,
+    s3g::LayoutPannerPreset::Lpac41,
+    s3g::LayoutPannerPreset::Srst25,
+};
+
 s3g::LayoutPannerPreset preset_from_index(long index, s3g::LayoutPannerPreset fallback)
 {
-    if (index < 0 || index > 26) return fallback;
-    return static_cast<s3g::LayoutPannerPreset>(static_cast<uint32_t>(index));
+    if (index < 0 || index >= static_cast<long>(kCuratedLayouts.size())) return fallback;
+    return kCuratedLayouts[static_cast<size_t>(index)];
+}
+
+uint32_t index_for_preset(s3g::LayoutPannerPreset preset)
+{
+    for (uint32_t i = 0; i < kCuratedLayouts.size(); ++i) {
+        if (kCuratedLayouts[i] == preset) return i;
+    }
+    return 0u;
 }
 
 const char* preset_symbol_name(s3g::LayoutPannerPreset preset)
@@ -168,9 +211,12 @@ const char* preset_symbol_name(s3g::LayoutPannerPreset preset)
     case s3g::LayoutPannerPreset::Custom: return "custom";
     case s3g::LayoutPannerPreset::Cube8: return "cube8";
     case s3g::LayoutPannerPreset::Cube17: return "cube17";
+    case s3g::LayoutPannerPreset::Cube41: return "cube41";
+    case s3g::LayoutPannerPreset::Lpac41: return "lpac41";
     case s3g::LayoutPannerPreset::Dodeca12: return "dodeca12";
     case s3g::LayoutPannerPreset::Dome24NoOverhead: return "dome24";
     case s3g::LayoutPannerPreset::Dome25: return "dome25";
+    case s3g::LayoutPannerPreset::Srst25: return "srst25";
     case s3g::LayoutPannerPreset::DoubleRing16: return "double16";
     case s3g::LayoutPannerPreset::DoubleRing20: return "double20";
     case s3g::LayoutPannerPreset::Icosahedron20: return "icosahedron20";
@@ -215,29 +261,13 @@ s3g::LayoutPannerMethod method_from_index(long index, s3g::LayoutPannerMethod fa
     return static_cast<s3g::LayoutPannerMethod>(static_cast<uint32_t>(index));
 }
 
-s3g::LayoutPannerCustomShape shape_from_name(t_symbol* sym, s3g::LayoutPannerCustomShape fallback)
-{
-    const auto s = lower_name(sym);
-    if (s == "auto") return s3g::LayoutPannerCustomShape::Auto;
-    if (s == "ring") return s3g::LayoutPannerCustomShape::Ring;
-    if (s == "dome") return s3g::LayoutPannerCustomShape::Dome;
-    if (s == "tetra") return s3g::LayoutPannerCustomShape::Tetra;
-    if (s == "octa") return s3g::LayoutPannerCustomShape::Octa;
-    if (s == "cube") return s3g::LayoutPannerCustomShape::Cube;
-    if (s == "ico" || s == "icosa") return s3g::LayoutPannerCustomShape::Icosa;
-    if (s == "dodeca") return s3g::LayoutPannerCustomShape::Dodeca;
-    if (s == "geo") return s3g::LayoutPannerCustomShape::Geo;
-    if (s == "stack") return s3g::LayoutPannerCustomShape::Stack;
-    return fallback;
-}
-
 void sync_attrs(t_s3g_layoutpan* x)
 {
     if (!x || !x->impl) return;
     const auto p = x->impl->panner.params();
     const auto source = x->impl->panner.source(p.selectedSource);
     x->impl->params = p;
-    x->layout = static_cast<double>(static_cast<uint32_t>(p.layout));
+    x->layout = static_cast<double>(index_for_preset(p.layout));
     x->method = static_cast<double>(static_cast<uint32_t>(p.method));
     x->focus = p.focus;
     x->rolloff = p.distanceRolloffDb;
@@ -246,6 +276,7 @@ void sync_attrs(t_s3g_layoutpan* x)
     x->globalel = p.globalElevationDeg;
     x->globaldist = p.globalDistanceOffset;
     x->diffusion = p.distanceDiffusion;
+    x->inside = static_cast<double>(static_cast<uint32_t>(p.insideMode));
     x->output = p.outputGainDb;
     x->selected = static_cast<double>(p.selectedSource + 1u);
     x->azimuth = source.azimuthDeg;
@@ -293,6 +324,7 @@ void set_globalaz(t_s3g_layoutpan* x, double v) { x->impl->params.globalAzimuthD
 void set_globalel(t_s3g_layoutpan* x, double v) { x->impl->params.globalElevationDeg = static_cast<float>(v); apply_params(x); notify_attr(x, "globalel"); }
 void set_globaldist(t_s3g_layoutpan* x, double v) { x->impl->params.globalDistanceOffset = static_cast<float>(v); apply_params(x); notify_attr(x, "globaldist"); }
 void set_diffusion(t_s3g_layoutpan* x, double v) { x->impl->params.distanceDiffusion = static_cast<float>(v); apply_params(x); notify_attr(x, "diffusion"); }
+void set_inside(t_s3g_layoutpan* x, double v) { x->impl->params.insideMode = static_cast<s3g::LayoutPannerInsideMode>(std::clamp<long>(static_cast<long>(std::lround(v)), 0, 3)); apply_params(x); notify_attr(x, "inside"); }
 void set_output(t_s3g_layoutpan* x, double v) { x->impl->params.outputGainDb = static_cast<float>(v); apply_params(x); notify_attr(x, "output"); }
 
 void set_selected(t_s3g_layoutpan* x, double v)
@@ -346,6 +378,19 @@ void s3g_layoutpan_globalaz(t_s3g_layoutpan* x, double v) { set_globalaz(x, v); 
 void s3g_layoutpan_globalel(t_s3g_layoutpan* x, double v) { set_globalel(x, v); }
 void s3g_layoutpan_globaldist(t_s3g_layoutpan* x, double v) { set_globaldist(x, v); }
 void s3g_layoutpan_diffusion(t_s3g_layoutpan* x, double v) { set_diffusion(x, v); }
+void s3g_layoutpan_inside(t_s3g_layoutpan* x, t_symbol*, long argc, t_atom* argv)
+{
+    if (!x || !x->impl || argc < 1 || !argv) return;
+    if (atom_gettype(argv) == A_SYM) {
+        const auto s = lower_name(atom_getsym(argv));
+        if (s == "hold") set_inside(x, 0.0);
+        else if (s == "attenuate" || s == "atten") set_inside(x, 1.0);
+        else if (s == "diffuse") set_inside(x, 2.0);
+        else if (s == "center" || s == "centre" || s == "blend" || s == "centerblend") set_inside(x, 3.0);
+    } else {
+        set_inside(x, atom_getlong(argv));
+    }
+}
 void s3g_layoutpan_output(t_s3g_layoutpan* x, double v) { set_output(x, v); }
 void s3g_layoutpan_select(t_s3g_layoutpan* x, double v) { set_selected(x, v); }
 void s3g_layoutpan_azimuth(t_s3g_layoutpan* x, double v) { set_selected_source_aed(x, v, x->elevation, x->distance, x->sourcegain); }
@@ -416,57 +461,6 @@ void s3g_layoutpan_solo(t_s3g_layoutpan* x, t_symbol*, long argc, t_atom* argv)
     s3g_layoutpan_dump(x);
 }
 
-void s3g_layoutpan_speaker(t_s3g_layoutpan* x, t_symbol*, long argc, t_atom* argv)
-{
-    if (!x || !x->impl || argc < 4) {
-        object_error(reinterpret_cast<t_object*>(x), "speaker expects: speaker <1-64> <az> <el> <dist>");
-        return;
-    }
-    x->impl->panner.setSpeaker(index_from_one_based(atom_double_at(argc, argv, 0, 1.0), kMaxOutputs), {
-        static_cast<float>(atom_double_at(argc, argv, 1, 0.0)),
-        static_cast<float>(atom_double_at(argc, argv, 2, 0.0)),
-        static_cast<float>(atom_double_at(argc, argv, 3, 1.0))
-    });
-    sync_attrs(x);
-    s3g_layoutpan_dump(x);
-}
-
-void s3g_layoutpan_speakerxyz(t_s3g_layoutpan* x, t_symbol*, long argc, t_atom* argv)
-{
-    if (!x || !x->impl || argc < 4) {
-        object_error(reinterpret_cast<t_object*>(x), "speakerxyz expects: speakerxyz <1-64> <x> <y> <z>");
-        return;
-    }
-    x->impl->panner.setSpeakerPosition(index_from_one_based(atom_double_at(argc, argv, 0, 1.0), kMaxOutputs), {
-        static_cast<float>(atom_double_at(argc, argv, 1, 1.0)),
-        static_cast<float>(atom_double_at(argc, argv, 2, 0.0)),
-        static_cast<float>(atom_double_at(argc, argv, 3, 0.0))
-    });
-    sync_attrs(x);
-    s3g_layoutpan_dump(x);
-}
-
-void s3g_layoutpan_shape(t_s3g_layoutpan* x, t_symbol*, long argc, t_atom* argv)
-{
-    if (!x || !x->impl || argc < 1) {
-        object_error(reinterpret_cast<t_object*>(x), "shape expects: shape <auto|ring|dome|cube|geo|stack...> [count]");
-        return;
-    }
-    const auto shape = shape_from_name(atom_symbol_at(argc, argv, 0, gensym("auto")), x->impl->params.customShape);
-    const uint32_t count = static_cast<uint32_t>(std::clamp(atom_long_at(argc, argv, 1, x->impl->outputCount), 2L, kMaxOutputs));
-    x->impl->panner.setActiveSpeakers(count, shape);
-    sync_attrs(x);
-    s3g_layoutpan_dump(x);
-}
-
-void s3g_layoutpan_copycustom(t_s3g_layoutpan* x)
-{
-    if (!x || !x->impl) return;
-    x->impl->panner.copyCurrentLayoutToCustom();
-    sync_attrs(x);
-    s3g_layoutpan_dump(x);
-}
-
 void s3g_layoutpan_dump(t_s3g_layoutpan* x)
 {
     if (!x || !x->impl || !x->infoOutlet) return;
@@ -493,9 +487,10 @@ void s3g_layoutpan_dump(t_s3g_layoutpan* x)
     atom_setfloat(atoms + 4, p.globalElevationDeg);
     atom_setfloat(atoms + 5, p.globalDistanceOffset);
     atom_setfloat(atoms + 6, p.distanceDiffusion);
-    atom_setfloat(atoms + 7, p.outputGainDb);
-    atom_setlong(atoms + 8, static_cast<long>(p.selectedSource + 1u));
-    outlet_anything(x->infoOutlet, gensym("params"), 9, atoms);
+    atom_setlong(atoms + 7, static_cast<long>(static_cast<uint32_t>(p.insideMode)));
+    atom_setfloat(atoms + 8, p.outputGainDb);
+    atom_setlong(atoms + 9, static_cast<long>(p.selectedSource + 1u));
+    outlet_anything(x->infoOutlet, gensym("params"), 10, atoms);
 
     for (uint32_t i = 0; i < std::min<uint32_t>(p.activeSpeakers, kMaxOutputs); ++i) {
         const auto sp = x->impl->panner.speaker(i);
@@ -524,15 +519,24 @@ void s3g_layoutpan_dump(t_s3g_layoutpan* x)
 
 t_max_err attr_layout_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv)
 {
-    const auto v = static_cast<uint32_t>(std::clamp(atom_long_at(argc, argv, 0, static_cast<long>(x->layout)), 0L, 26L));
-    set_layout(x, static_cast<s3g::LayoutPannerPreset>(v));
+    if (!x || !x->impl || argc < 1 || !argv) return MAX_ERR_NONE;
+    if (atom_gettype(argv) == A_SYM) {
+        set_layout(x, preset_from_name(atom_getsym(argv), x->impl->params.layout));
+    } else {
+        set_layout(x, preset_from_index(atom_getlong(argv), x->impl->params.layout));
+    }
     return MAX_ERR_NONE;
 }
 
 t_max_err attr_method_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv)
 {
-    const auto v = static_cast<uint32_t>(std::clamp(atom_long_at(argc, argv, 0, static_cast<long>(x->method)), 0L, 1L));
-    set_method(x, static_cast<s3g::LayoutPannerMethod>(v));
+    if (!x || !x->impl || argc < 1 || !argv) return MAX_ERR_NONE;
+    if (atom_gettype(argv) == A_SYM) {
+        set_method(x, method_from_name(atom_getsym(argv), x->impl->params.method));
+    } else {
+        const auto v = static_cast<uint32_t>(std::clamp(atom_getlong(argv), 0L, 1L));
+        set_method(x, static_cast<s3g::LayoutPannerMethod>(v));
+    }
     return MAX_ERR_NONE;
 }
 
@@ -543,6 +547,7 @@ t_max_err attr_globalaz_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) 
 t_max_err attr_globalel_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { set_globalel(x, atom_double_at(argc, argv, 0, x->globalel)); return MAX_ERR_NONE; }
 t_max_err attr_globaldist_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { set_globaldist(x, atom_double_at(argc, argv, 0, x->globaldist)); return MAX_ERR_NONE; }
 t_max_err attr_diffusion_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { set_diffusion(x, atom_double_at(argc, argv, 0, x->diffusion)); return MAX_ERR_NONE; }
+t_max_err attr_inside_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { set_inside(x, atom_double_at(argc, argv, 0, x->inside)); return MAX_ERR_NONE; }
 t_max_err attr_output_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { set_output(x, atom_double_at(argc, argv, 0, x->output)); return MAX_ERR_NONE; }
 t_max_err attr_selected_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { set_selected(x, atom_double_at(argc, argv, 0, x->selected)); return MAX_ERR_NONE; }
 t_max_err attr_azimuth_set(t_s3g_layoutpan* x, void*, long argc, t_atom* argv) { s3g_layoutpan_azimuth(x, atom_double_at(argc, argv, 0, x->azimuth)); return MAX_ERR_NONE; }
@@ -649,9 +654,6 @@ void* s3g_layoutpan_new(t_symbol*, long argc, t_atom* argv)
     x->impl->params.layout = preset_from_name(layoutSym, s3g::LayoutPannerPreset::Ring16);
     x->impl->params.activeSources = static_cast<uint32_t>(x->impl->inputCount);
     x->impl->params.activeSpeakers = static_cast<uint32_t>(x->impl->outputCount);
-    if (x->impl->params.layout == s3g::LayoutPannerPreset::Custom) {
-        x->impl->params.customShape = s3g::LayoutPannerCustomShape::Auto;
-    }
 
     x->infoOutlet = outlet_new(reinterpret_cast<t_object*>(x), nullptr);
     if (x->mc) {
@@ -665,6 +667,7 @@ void* s3g_layoutpan_new(t_symbol*, long argc, t_atom* argv)
         }
     }
 
+    x->impl->panner.setParams(x->impl->params);
     sync_attrs(x);
     attr_args_process(x, argc, argv);
     prepare(x, sys_getsr());
@@ -703,6 +706,7 @@ extern "C" void ext_main(void* r)
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_globalel), "globalel", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_globaldist), "globaldist", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_diffusion), "diffusion", A_FLOAT, 0);
+    class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_inside), "inside", A_GIMME, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_output), "output", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_select), "select", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_select), "selected", A_FLOAT, 0);
@@ -715,16 +719,12 @@ extern "C" void ext_main(void* r)
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_sourcegain_msg), "srcgain", A_GIMME, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_mute), "mute", A_GIMME, 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_solo), "solo", A_GIMME, 0);
-    class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_speaker), "speaker", A_GIMME, 0);
-    class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_speakerxyz), "speakerxyz", A_GIMME, 0);
-    class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_shape), "shape", A_GIMME, 0);
-    class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_copycustom), "copycustom", 0);
     class_addmethod(c, reinterpret_cast<method>(s3g_layoutpan_dump), "dump", 0);
 
     CLASS_ATTR_DOUBLE(c, "layout", 0, t_s3g_layoutpan, layout);
     CLASS_ATTR_ACCESSORS(c, "layout", nullptr, attr_layout_set);
-    CLASS_ATTR_ENUMINDEX(c, "layout", 0, "custom cube8 cube17 dodeca12 dome24 dome25 double16 double20 octo quad quad+oh ring12 ring16 5.0 6.0 7.0 5.0.2 7.0.2 5.0.4 7.0.4 9.0 9.0.2 9.0.4 9.0.6 7.0.6 11.0.8 icosahedron20");
-    CLASS_ATTR_FILTER_CLIP(c, "layout", 0, 26);
+    CLASS_ATTR_ENUMINDEX(c, "layout", 0, "cube8 cube17 dodeca12 dome24 dome25 double16 double20 octo quad quad+oh ring12 ring16 5.0 6.0 7.0 5.0.2 7.0.2 5.0.4 7.0.4 9.0 9.0.2 9.0.4 9.0.6 7.0.6 11.0.8 icosahedron20 cube41 lpac41 srst25");
+    CLASS_ATTR_FILTER_CLIP(c, "layout", 0, 28);
     CLASS_ATTR_LABEL(c, "layout", 0, "Layout");
     CLASS_ATTR_DOUBLE(c, "method", 0, t_s3g_layoutpan, method);
     CLASS_ATTR_ACCESSORS(c, "method", nullptr, attr_method_set);
@@ -759,6 +759,11 @@ extern "C" void ext_main(void* r)
     CLASS_ATTR_ACCESSORS(c, "diffusion", nullptr, attr_diffusion_set);
     CLASS_ATTR_FILTER_CLIP(c, "diffusion", 0.0, 1.0);
     CLASS_ATTR_LABEL(c, "diffusion", 0, "Distance Diffusion");
+    CLASS_ATTR_DOUBLE(c, "inside", 0, t_s3g_layoutpan, inside);
+    CLASS_ATTR_ACCESSORS(c, "inside", nullptr, attr_inside_set);
+    CLASS_ATTR_ENUMINDEX(c, "inside", 0, "hold attenuate diffuse center");
+    CLASS_ATTR_FILTER_CLIP(c, "inside", 0, 3);
+    CLASS_ATTR_LABEL(c, "inside", 0, "Inside Mode");
     CLASS_ATTR_DOUBLE(c, "output", 0, t_s3g_layoutpan, output);
     CLASS_ATTR_ACCESSORS(c, "output", nullptr, attr_output_set);
     CLASS_ATTR_FILTER_CLIP(c, "output", -60.0, 12.0);
@@ -788,6 +793,23 @@ extern "C" void ext_main(void* r)
     CLASS_ATTR_FILTER_CLIP(c, "mc", 0, 1);
     CLASS_ATTR_LABEL(c, "mc", 0, "MC Mode");
 
+    CLASS_ATTR_DEFAULT(c, "layout", 0, "12"); CLASS_ATTR_SAVE(c, "layout", 0);
+    CLASS_ATTR_DEFAULT(c, "method", 0, "0"); CLASS_ATTR_SAVE(c, "method", 0);
+    CLASS_ATTR_DEFAULT(c, "focus", 0, "1."); CLASS_ATTR_SAVE(c, "focus", 0);
+    CLASS_ATTR_DEFAULT(c, "rolloff", 0, "6."); CLASS_ATTR_SAVE(c, "rolloff", 0);
+    CLASS_ATTR_DEFAULT(c, "smooth", 0, "35."); CLASS_ATTR_SAVE(c, "smooth", 0);
+    CLASS_ATTR_DEFAULT(c, "globalaz", 0, "0."); CLASS_ATTR_SAVE(c, "globalaz", 0);
+    CLASS_ATTR_DEFAULT(c, "globalel", 0, "0."); CLASS_ATTR_SAVE(c, "globalel", 0);
+    CLASS_ATTR_DEFAULT(c, "globaldist", 0, "0."); CLASS_ATTR_SAVE(c, "globaldist", 0);
+    CLASS_ATTR_DEFAULT(c, "diffusion", 0, "0.35"); CLASS_ATTR_SAVE(c, "diffusion", 0);
+    CLASS_ATTR_DEFAULT(c, "inside", 0, "0"); CLASS_ATTR_SAVE(c, "inside", 0);
+    CLASS_ATTR_DEFAULT(c, "output", 0, "-6."); CLASS_ATTR_SAVE(c, "output", 0);
+    CLASS_ATTR_DEFAULT(c, "selected", 0, "1"); CLASS_ATTR_SAVE(c, "selected", 0);
+    CLASS_ATTR_DEFAULT(c, "azimuth", 0, "-30."); CLASS_ATTR_SAVE(c, "azimuth", 0);
+    CLASS_ATTR_DEFAULT(c, "elevation", 0, "0."); CLASS_ATTR_SAVE(c, "elevation", 0);
+    CLASS_ATTR_DEFAULT(c, "distance", 0, "1."); CLASS_ATTR_SAVE(c, "distance", 0);
+    CLASS_ATTR_DEFAULT(c, "sourcegain", 0, "0."); CLASS_ATTR_SAVE(c, "sourcegain", 0);
+    CLASS_ATTR_DEFAULT(c, "mc", 0, "0"); CLASS_ATTR_SAVE(c, "mc", 0);
     class_dspinit(c);
     class_register(CLASS_BOX, c);
     s_s3g_layoutpan_class = c;

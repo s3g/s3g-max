@@ -9,16 +9,21 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <new>
 
 namespace {
 
 constexpr long kDefaultChannels = 16;
 constexpr long kMaxChannels = s3g::kArrayHpfMaxChannels;
 
-struct t_s3g_arrayhpf {
-    t_pxobject object;
+struct ArrayHpfImpl {
     s3g::ArrayHpf hpf;
     s3g::ArrayHpfParams params;
+};
+
+struct t_s3g_arrayhpf {
+    t_pxobject object;
+    ArrayHpfImpl* impl = nullptr;
     void* infoOutlet = nullptr;
     long channels = kDefaultChannels;
     long mc = 0;
@@ -62,13 +67,13 @@ void notify_attr(t_s3g_arrayhpf* x, const char* name)
 
 void sync_attrs(t_s3g_arrayhpf* x)
 {
-    if (!x) return;
-    x->params = x->hpf.params();
-    x->activechannels = x->params.activeChannels;
-    x->cutoff = x->params.cutoffHz;
-    x->poles = x->params.poles;
-    x->output = x->params.outputGainDb;
-    x->bypass = x->params.bypass ? 1.0 : 0.0;
+    if (!x || !x->impl) return;
+    x->impl->params = x->impl->hpf.params();
+    x->activechannels = x->impl->params.activeChannels;
+    x->cutoff = x->impl->params.cutoffHz;
+    x->poles = x->impl->params.poles;
+    x->output = x->impl->params.outputGainDb;
+    x->bypass = x->impl->params.bypass ? 1.0 : 0.0;
 }
 
 void dump(t_s3g_arrayhpf* x)
@@ -77,39 +82,39 @@ void dump(t_s3g_arrayhpf* x)
     sync_attrs(x);
     t_atom atoms[8];
     atom_setlong(atoms, x->channels);
-    atom_setlong(atoms + 1, static_cast<long>(x->params.activeChannels));
-    atom_setlong(atoms + 2, static_cast<long>(x->params.poles));
+    atom_setlong(atoms + 1, static_cast<long>(x->impl->params.activeChannels));
+    atom_setlong(atoms + 2, static_cast<long>(x->impl->params.poles));
     outlet_anything(x->infoOutlet, gensym("config"), 3, atoms);
-    atom_setfloat(atoms, x->params.cutoffHz);
-    atom_setfloat(atoms + 1, x->params.outputGainDb);
-    atom_setlong(atoms + 2, x->params.bypass ? 1 : 0);
+    atom_setfloat(atoms, x->impl->params.cutoffHz);
+    atom_setfloat(atoms + 1, x->impl->params.outputGainDb);
+    atom_setlong(atoms + 2, x->impl->params.bypass ? 1 : 0);
     outlet_anything(x->infoOutlet, gensym("state"), 3, atoms);
     outlet_anything(x->infoOutlet, gensym("done"), 0, nullptr);
 }
 
 void apply(t_s3g_arrayhpf* x)
 {
-    if (!x) return;
-    x->hpf.setParams(x->params);
+    if (!x || !x->impl) return;
+    x->impl->hpf.setParams(x->impl->params);
     sync_attrs(x);
     dump(x);
 }
 
 void prepare(t_s3g_arrayhpf* x, double sampleRate)
 {
-    if (!x) return;
+    if (!x || !x->impl) return;
     x->sampleRate = std::max(1.0, sampleRate);
-    x->hpf.prepare(x->sampleRate);
-    x->hpf.setParams(x->params);
+    x->impl->hpf.prepare(x->sampleRate);
+    x->impl->hpf.setParams(x->impl->params);
     x->prepared = true;
     sync_attrs(x);
 }
 
-void set_activechannels(t_s3g_arrayhpf* x, double v) { x->params.activeChannels = static_cast<uint32_t>(std::clamp(v, 1.0, static_cast<double>(x->channels))); apply(x); notify_attr(x, "activechannels"); }
-void set_cutoff(t_s3g_arrayhpf* x, double v) { x->params.cutoffHz = static_cast<float>(v); apply(x); notify_attr(x, "cutoff"); }
-void set_poles(t_s3g_arrayhpf* x, double v) { x->params.poles = static_cast<uint32_t>(std::clamp(std::floor(v + 0.5), 1.0, 4.0)); apply(x); notify_attr(x, "poles"); }
-void set_output(t_s3g_arrayhpf* x, double v) { x->params.outputGainDb = static_cast<float>(v); apply(x); notify_attr(x, "output"); }
-void set_bypass(t_s3g_arrayhpf* x, double v) { x->params.bypass = v != 0.0; apply(x); notify_attr(x, "bypass"); }
+void set_activechannels(t_s3g_arrayhpf* x, double v) { x->impl->params.activeChannels = static_cast<uint32_t>(std::clamp(v, 1.0, static_cast<double>(x->channels))); apply(x); notify_attr(x, "activechannels"); }
+void set_cutoff(t_s3g_arrayhpf* x, double v) { x->impl->params.cutoffHz = static_cast<float>(v); apply(x); notify_attr(x, "cutoff"); }
+void set_poles(t_s3g_arrayhpf* x, double v) { x->impl->params.poles = static_cast<uint32_t>(std::clamp(std::floor(v + 0.5), 1.0, 4.0)); apply(x); notify_attr(x, "poles"); }
+void set_output(t_s3g_arrayhpf* x, double v) { x->impl->params.outputGainDb = static_cast<float>(v); apply(x); notify_attr(x, "output"); }
+void set_bypass(t_s3g_arrayhpf* x, double v) { x->impl->params.bypass = v != 0.0; apply(x); notify_attr(x, "bypass"); }
 
 t_max_err attr_activechannels(t_s3g_arrayhpf* x, void*, long argc, t_atom* argv) { set_activechannels(x, atom_double_at(argc, argv, 0, x->activechannels)); return MAX_ERR_NONE; }
 t_max_err attr_cutoff(t_s3g_arrayhpf* x, void*, long argc, t_atom* argv) { set_cutoff(x, atom_double_at(argc, argv, 0, x->cutoff)); return MAX_ERR_NONE; }
@@ -119,10 +124,10 @@ t_max_err attr_bypass(t_s3g_arrayhpf* x, void*, long argc, t_atom* argv) { set_b
 
 void perform64(t_s3g_arrayhpf* x, t_object*, double** ins, long numins, double** outs, long numouts, long frames, long, void*)
 {
-    if (!x || !x->prepared) return;
+    if (!x || !x->impl || !x->prepared) return;
     const long inCount = std::min<long>({ x->channels, numins, kMaxChannels });
     const long outCount = std::min<long>({ x->channels, numouts, kMaxChannels });
-    x->hpf.processBlock(ins, outs, static_cast<uint32_t>(inCount), static_cast<uint32_t>(outCount), static_cast<uint32_t>(frames));
+    x->impl->hpf.processBlock(ins, outs, static_cast<uint32_t>(inCount), static_cast<uint32_t>(outCount), static_cast<uint32_t>(frames));
     for (long ch = outCount; ch < numouts; ++ch) {
         if (outs[ch]) std::fill(outs[ch], outs[ch] + frames, 0.0);
     }
@@ -130,6 +135,7 @@ void perform64(t_s3g_arrayhpf* x, t_object*, double** ins, long numins, double**
 
 void dsp64(t_s3g_arrayhpf* x, t_object* dsp64, short*, double sampleRate, long, long)
 {
+    if (!x || !x->impl) return;
     if (!x->prepared || sampleRate != x->sampleRate) prepare(x, sampleRate);
     object_method(dsp64, gensym("dsp_add64"), x, perform64, 0, nullptr);
 }
@@ -153,9 +159,14 @@ void* arrayhpf_new(t_symbol*, long argc, t_atom* argv)
 {
     auto* x = static_cast<t_s3g_arrayhpf*>(object_alloc(s_class));
     if (!x) return nullptr;
+    x->impl = new (std::nothrow) ArrayHpfImpl();
+    if (!x->impl) {
+        object_free(reinterpret_cast<t_object*>(x));
+        return nullptr;
+    }
     x->channels = std::clamp(atom_long_at(argc, argv, 0, kDefaultChannels), 1L, kMaxChannels);
     x->mc = attr_long_arg(argc, argv, "mc", 0) != 0 ? 1 : 0;
-    x->params.activeChannels = static_cast<uint32_t>(x->channels);
+    x->impl->params.activeChannels = static_cast<uint32_t>(x->channels);
     x->infoOutlet = outlet_new(reinterpret_cast<t_object*>(x), nullptr);
     if (x->mc) {
         dsp_setup(reinterpret_cast<t_pxobject*>(x), 1);
@@ -170,7 +181,7 @@ void* arrayhpf_new(t_symbol*, long argc, t_atom* argv)
     return x;
 }
 
-void free_object(t_s3g_arrayhpf* x) { dsp_free(reinterpret_cast<t_pxobject*>(x)); }
+void free_object(t_s3g_arrayhpf* x) { dsp_free(reinterpret_cast<t_pxobject*>(x)); delete x->impl; x->impl = nullptr; }
 
 } // namespace
 
@@ -193,6 +204,12 @@ extern "C" void ext_main(void*)
     CLASS_ATTR_DOUBLE(c, "output", 0, t_s3g_arrayhpf, output); CLASS_ATTR_ACCESSORS(c, "output", nullptr, attr_output); CLASS_ATTR_FILTER_CLIP(c, "output", -60, 18);
     CLASS_ATTR_DOUBLE(c, "bypass", 0, t_s3g_arrayhpf, bypass); CLASS_ATTR_ACCESSORS(c, "bypass", nullptr, attr_bypass); CLASS_ATTR_FILTER_CLIP(c, "bypass", 0, 1);
     CLASS_ATTR_LONG(c, "mc", 0, t_s3g_arrayhpf, mc);
+    CLASS_ATTR_DEFAULT(c, "activechannels", 0, "16"); CLASS_ATTR_SAVE(c, "activechannels", 0);
+    CLASS_ATTR_DEFAULT(c, "cutoff", 0, "90."); CLASS_ATTR_SAVE(c, "cutoff", 0);
+    CLASS_ATTR_DEFAULT(c, "poles", 0, "2"); CLASS_ATTR_SAVE(c, "poles", 0);
+    CLASS_ATTR_DEFAULT(c, "output", 0, "0."); CLASS_ATTR_SAVE(c, "output", 0);
+    CLASS_ATTR_DEFAULT(c, "bypass", 0, "0"); CLASS_ATTR_SAVE(c, "bypass", 0);
+    CLASS_ATTR_DEFAULT(c, "mc", 0, "0"); CLASS_ATTR_SAVE(c, "mc", 0);
     class_dspinit(c);
     class_register(CLASS_BOX, c);
     s_class = c;

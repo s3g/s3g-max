@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <new>
 #include <string>
 #include <vector>
 
@@ -28,6 +29,7 @@ struct AmbiGrainImpl {
     double sampleRate = 48000.0;
     bool prepared = false;
     bool playing = true;
+    bool refreshPending = false;
 };
 
 struct t_s3g_ambigrain {
@@ -194,12 +196,29 @@ std::shared_ptr<s3g::AmbiGrainSample> snapshot_buffer(t_s3g_ambigrain* x)
 void refresh(t_s3g_ambigrain* x)
 {
     if (!x || !x->impl) return;
+    x->impl->refreshPending = false;
     auto sample = snapshot_buffer(x);
+    if (!sample) {
+        dump(x);
+        return;
+    }
     std::shared_ptr<const s3g::AmbiGrainSample> immutable = sample;
     std::atomic_store_explicit(&x->impl->sample, immutable, std::memory_order_release);
     x->impl->engine.reset();
-    if (sample) object_post(reinterpret_cast<t_object*>(x), "s3g.ambigrain~: loaded %u frames / %u channels", sample->frames, sample->channels);
+    object_post(reinterpret_cast<t_object*>(x), "s3g.ambigrain~: loaded %u frames / %u channels", sample->frames, sample->channels);
     dump(x);
+}
+
+void refresh_deferred(t_s3g_ambigrain* x, t_symbol*, short, t_atom*)
+{
+    refresh(x);
+}
+
+void request_refresh(t_s3g_ambigrain* x)
+{
+    if (!x || !x->impl || x->impl->refreshPending) return;
+    x->impl->refreshPending = true;
+    defer_low(reinterpret_cast<t_object*>(x), reinterpret_cast<method>(refresh_deferred), nullptr, 0, nullptr);
 }
 
 void set_buffer(t_s3g_ambigrain* x, t_symbol* name)
@@ -208,7 +227,7 @@ void set_buffer(t_s3g_ambigrain* x, t_symbol* name)
     x->buffername = name;
     if (!x->impl->bufferRef) x->impl->bufferRef = buffer_ref_new(reinterpret_cast<t_object*>(x), name);
     else buffer_ref_set(x->impl->bufferRef, name);
-    refresh(x);
+    request_refresh(x);
     notify_attr(x, "buffer");
 }
 
@@ -251,7 +270,7 @@ t_max_err attr_play(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_pl
 
 void perform64(t_s3g_ambigrain* x, t_object*, double**, long, double** outs, long numouts, long frames, long, void*)
 {
-    if (!x || !x->impl || !x->impl->prepared || !outs) return;
+    if (!x || !x->impl || !x->impl->prepared || !outs || frames <= 0) return;
     const uint32_t outChannels = std::min<uint32_t>({ active_channels(x), static_cast<uint32_t>(numouts), s3g::kAmbiGrainChannels });
     for (uint32_t ch = 0; ch < outChannels; ++ch) x->impl->temp[ch].assign(static_cast<size_t>(frames), 0.0f);
     std::array<float*, kMaxChannels> ptrs {};
@@ -271,12 +290,13 @@ void perform64(t_s3g_ambigrain* x, t_object*, double**, long, double** outs, lon
 void dsp64(t_s3g_ambigrain* x, t_object* dsp64, short*, double sampleRate, long, long)
 {
     if (!x->impl->prepared || sampleRate != x->impl->sampleRate) prepare(x, sampleRate);
+    if (!std::atomic_load_explicit(&x->impl->sample, std::memory_order_acquire)) request_refresh(x);
     object_method(dsp64, gensym("dsp_add64"), x, perform64, 0, nullptr);
 }
 
 void assist(t_s3g_ambigrain* x, void*, long msg, long index, char* text)
 {
-    if (msg == ASSIST_INLET) snprintf_zero(text, 256, "Messages");
+    if (msg == ASSIST_INLET) snprintf_zero(text, 256, "Signal sync input / messages");
     else if (x && x->mc && index == 0) snprintf_zero(text, 256, "MC ambisonic grain output");
     else if (index < active_channels(x)) snprintf_zero(text, 256, "Ambisonic output channel %ld", index + 1);
     else snprintf_zero(text, 256, "Info outlet");
@@ -289,17 +309,21 @@ void* ambigrain_new(t_symbol*, long argc, t_atom* argv)
 {
     auto* x = static_cast<t_s3g_ambigrain*>(object_alloc(s_class));
     if (!x) return nullptr;
-    x->impl = new AmbiGrainImpl();
+    x->impl = new (std::nothrow) AmbiGrainImpl();
+    if (!x->impl) {
+        object_free(reinterpret_cast<t_object*>(x));
+        return nullptr;
+    }
     x->buffername = atom_symbol_at(argc, argv, 0, gensym(""));
     x->impl->params.order = static_cast<uint32_t>(std::clamp(atom_long_at(argc, argv, 1, 3), 1L, 3L));
     x->mc = attr_long_arg(argc, argv, "mc", 0) != 0 ? 1 : 0;
     x->infoOutlet = outlet_new(reinterpret_cast<t_object*>(x), nullptr);
     if (x->mc) {
-        dsp_setup(reinterpret_cast<t_pxobject*>(x), 0);
-        x->object.z_misc |= Z_NO_INPLACE;
+        dsp_setup(reinterpret_cast<t_pxobject*>(x), 1);
+        x->object.z_misc |= Z_NO_INPLACE | Z_MC_INLETS;
         outlet_new(reinterpret_cast<t_object*>(x), "multichannelsignal");
     } else {
-        dsp_setup(reinterpret_cast<t_pxobject*>(x), 0);
+        dsp_setup(reinterpret_cast<t_pxobject*>(x), 1);
         for (long i = 0; i < kMaxChannels; ++i) outlet_new(reinterpret_cast<t_object*>(x), "signal");
     }
     attr_args_process(x, argc, argv);
@@ -365,6 +389,23 @@ extern "C" void ext_main(void*)
     CLASS_ATTR_DOUBLE(c, "output", 0, t_s3g_ambigrain, output); CLASS_ATTR_ACCESSORS(c, "output", nullptr, attr_output); CLASS_ATTR_FILTER_CLIP(c, "output", -60, 6);
     CLASS_ATTR_DOUBLE(c, "play", 0, t_s3g_ambigrain, play); CLASS_ATTR_ACCESSORS(c, "play", nullptr, attr_play); CLASS_ATTR_FILTER_CLIP(c, "play", 0, 1);
     CLASS_ATTR_LONG(c, "mc", 0, t_s3g_ambigrain, mc);
+    CLASS_ATTR_DEFAULT(c, "order", 0, "3"); CLASS_ATTR_SAVE(c, "order", 0);
+    CLASS_ATTR_DEFAULT(c, "mode", 0, "0"); CLASS_ATTR_SAVE(c, "mode", 0);
+    CLASS_ATTR_DEFAULT(c, "density", 0, "28."); CLASS_ATTR_SAVE(c, "density", 0);
+    CLASS_ATTR_DEFAULT(c, "grain", 0, "90."); CLASS_ATTR_SAVE(c, "grain", 0);
+    CLASS_ATTR_DEFAULT(c, "position", 0, "0."); CLASS_ATTR_SAVE(c, "position", 0);
+    CLASS_ATTR_DEFAULT(c, "scan", 0, "1."); CLASS_ATTR_SAVE(c, "scan", 0);
+    CLASS_ATTR_DEFAULT(c, "jitter", 0, "0.12"); CLASS_ATTR_SAVE(c, "jitter", 0);
+    CLASS_ATTR_DEFAULT(c, "rate", 0, "1."); CLASS_ATTR_SAVE(c, "rate", 0);
+    CLASS_ATTR_DEFAULT(c, "ratejitter", 0, "0.04"); CLASS_ATTR_SAVE(c, "ratejitter", 0);
+    CLASS_ATTR_DEFAULT(c, "reverse", 0, "0."); CLASS_ATTR_SAVE(c, "reverse", 0);
+    CLASS_ATTR_DEFAULT(c, "freeze", 0, "0.5"); CLASS_ATTR_SAVE(c, "freeze", 0);
+    CLASS_ATTR_DEFAULT(c, "jumpsteps", 0, "8"); CLASS_ATTR_SAVE(c, "jumpsteps", 0);
+    CLASS_ATTR_DEFAULT(c, "sync", 0, "1"); CLASS_ATTR_SAVE(c, "sync", 0);
+    CLASS_ATTR_DEFAULT(c, "envelope", 0, "0"); CLASS_ATTR_SAVE(c, "envelope", 0);
+    CLASS_ATTR_DEFAULT(c, "output", 0, "-12."); CLASS_ATTR_SAVE(c, "output", 0);
+    CLASS_ATTR_DEFAULT(c, "play", 0, "1"); CLASS_ATTR_SAVE(c, "play", 0);
+    CLASS_ATTR_DEFAULT(c, "mc", 0, "0"); CLASS_ATTR_SAVE(c, "mc", 0);
     class_dspinit(c);
     class_register(CLASS_BOX, c);
     s_class = c;

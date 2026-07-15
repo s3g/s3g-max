@@ -175,6 +175,8 @@ function layoutAeds(name, count) {
     ]);
     else if (name === "cube8") base = cube8Aeds();
     else if (name === "cube17") base = cube17Aeds();
+    else if (name === "cube41") base = aedsFromXyz(cube41Xyz());
+    else if (name === "lpac41") base = aedsFromXyz(lpac41Xyz());
     else if (name === "dodeca12") base = dodecaAeds();
     else if (name === "icosahedron20") base = icosahedron20Aeds();
     else if (name === "double16") base = bedAeds(ring(8)).concat(elevatedRing(8, 45, 1));
@@ -182,6 +184,7 @@ function layoutAeds(name, count) {
     else if (name === "octo") base = bedAeds(ringFrom(-45, count));
     else if (name === "ring12" || name === "ring16") base = bedAeds(ring(count));
     else if (name === "dome24" || name === "dome25") base = srstDomeAeds(name === "dome25");
+    else if (name === "srst25") base = normalizeAedDistances(aedsFromRoomXyz(srst25Xyz()));
     else base = bedAeds(ring(count));
     var height = (name === "quad+oh") ? 0 : heightCountForLayout(name);
     if (height > 0) base = base.concat(overheadAzimuths(height));
@@ -211,6 +214,51 @@ function cube17Aeds() {
         [0, 0, 1]
     ];
     return aedsFromXyz(pts);
+}
+
+function cube41Xyz() {
+    return [
+        [-0.6,1,0],[-0.2,1,0],[0.2,1,0],[0.6,1,0],[1,0.6,0],[1,0.2,0],[1,-0.2,0],[1,-0.6,0],
+        [0.6,-1,0],[0.2,-1,0],[-0.2,-1,0],[-0.6,-1,0],[-1,-0.6,0],[-1,-0.2,0],[-1,0.2,0],[-1,0.6,0],
+        [-0.45,1,0.3333333333],[0,1,0.3333333333],[0.45,1,0.3333333333],
+        [1,0.45,0.3333333333],[1,0,0.3333333333],[1,-0.45,0.3333333333],
+        [0.45,-1,0.3333333333],[0,-1,0.3333333333],[-0.45,-1,0.3333333333],
+        [-1,-0.45,0.3333333333],[-1,0,0.3333333333],[-1,0.45,0.3333333333],
+        [-0.25,1,0.6666666667],[0.25,1,0.6666666667],[1,0.25,0.6666666667],[1,-0.25,0.6666666667],
+        [0.25,-1,0.6666666667],[-0.25,-1,0.6666666667],[-1,-0.25,0.6666666667],[-1,0.25,0.6666666667],
+        [-0.46,0.46,1],[0.46,0.46,1],[0.46,-0.46,1],[-0.46,-0.46,1],[0,0,1]
+    ];
+}
+
+function lpac41Xyz() {
+    return [
+        [0.976131199,0.656268998,0],[0.932012275,0.216888632,0],[0.932012275,-0.224256492,0],[0.976131199,-0.665445734,0],
+        [0.637871407,-0.841921431,0],[0.189314304,-0.841921431,0],[-0.202197030,-0.841921431,0],[-0.604782213,-0.797802507,0],
+        [-0.976131199,-0.661783864,0],[-0.932012275,-0.224256492,0],[-0.932012275,0.220594621,0],[-0.976131199,0.661783864,0],
+        [-0.604782213,0.794140636,0],[-0.202197030,0.838259561,0],[0.189314304,0.838259561,0],[0.637871407,0.838259561,0],
+        [0.976131199,0.426453522,0.4559249631],[0.976131199,0,0.4559249631],[0.976131199,-0.441189242,0.4559249631],
+        [0.437483253,-0.841921431,0.4559249631],[-0.090046724,-0.841921431,0.4559249631],[-0.446704108,-0.841921431,0.4559249631],
+        [-0.976131199,-0.375010856,0.4559249631],[-0.976131199,0,0.4559249631],[-0.976131199,0.375010856,0.4559249631],
+        [-0.446704108,0.838259561,0.4559249631],[-0.077208117,0.838259561,0.4559249631],[0.437483253,0.838259561,0.4559249631],
+        [0.976131199,0.235286223,0.8529952812],[0.976131199,-0.235286223,0.8529952812],
+        [0.191167299,-0.841921431,0.8529952812],[-0.213226761,-0.841921431,0.8529952812],
+        [-0.999999537,-0.216888632,0.8529952812],[-0.999999537,0.154416235,0.8529952812],[-0.213226761,0.838259561,0.8529952812],
+        [0.191167299,0.838259561,0.8529952812],
+        [0.483455172,0.441189242,0.9081439365],[0.483455172,-0.441189242,0.9081439365],
+        [-0.479793301,-0.441189242,0.9081439365],[-0.479793301,0.441189242,0.9081439365],[0,0,0.9081439365]
+    ];
+}
+
+function srst25Xyz() {
+    return [
+        [1.442,2.498,0],[2.498,1.442,0],[2.885,0,0],[2.498,-1.442,0],
+        [1.442,-2.498,0],[0,-2.885,0],[-1.442,-2.498,0],[-2.498,-1.442,0],
+        [-2.885,0,0],[-2.498,1.442,0],[-1.442,2.498,0],[0,2.885,0],
+        [1.763,1.763,1.559],[2.493,0,1.559],[1.763,-1.763,1.559],[0,-2.493,1.559],
+        [-1.763,-1.763,1.559],[-2.493,0,1.559],[-1.763,1.763,1.559],[0,2.493,1.559],
+        [1.152,0,2.671],[0,-1.152,2.671],[-1.152,0,2.671],[0,1.152,2.671],
+        [0,0,2.941]
+    ];
 }
 
 function dodecaAeds() {
@@ -247,6 +295,24 @@ function aedsFromXyz(points) {
         out.push({ az: wrapDeg(Math.atan2(y, x) * 180 / Math.PI), el: Math.atan2(z, h) * 180 / Math.PI, distance: d });
     }
     return out;
+}
+
+function aedsFromRoomXyz(points) {
+    var out = [];
+    for (var i = 0; i < points.length; i++) {
+        var x = points[i][0];
+        var y = points[i][1];
+        var z = points[i][2];
+        var h = Math.sqrt(x * x + y * y);
+        var d = Math.sqrt(x * x + y * y + z * z);
+        out.push({ az: wrapDeg(-Math.atan2(x, y) * 180 / Math.PI), el: Math.atan2(z, h) * 180 / Math.PI, distance: d });
+    }
+    return out;
+}
+
+function normalizeAedDistances(points) {
+    for (var i = 0; i < points.length; i++) points[i].distance = 1;
+    return points;
 }
 
 function elevatedRing(count, el, distance) {
@@ -717,7 +783,8 @@ function layoutCounts(name) {
     if (name === "cube17") return { high: 17 };
     if (name === "double20") return { high: 20 };
     if (name === "dome24") return { high: 24 };
-    if (name === "dome25") return { high: 25 };
+    if (name === "dome25" || name === "srst25") return { high: 25 };
+    if (name === "cube41" || name === "lpac41") return { high: 41 };
     return { high: 0 };
 }
 
@@ -729,12 +796,12 @@ function normalizeLayoutName(v) {
 }
 
 function layoutNameForIndex(i) {
-    var names = ["custom", "cube8", "cube17", "dodeca12", "dome24", "dome25", "double16", "double20", "octo", "quad", "quad+oh", "ring12", "ring16", "5.0", "6.0", "7.0", "5.0.2", "7.0.2", "5.0.4", "7.0.4", "9.0", "9.0.2", "9.0.4", "9.0.6", "7.0.6", "11.0.8", "icosahedron20"];
+    var names = ["custom", "cube8", "cube17", "dodeca12", "dome24", "dome25", "double16", "double20", "octo", "quad", "quad+oh", "ring12", "ring16", "5.0", "6.0", "7.0", "5.0.2", "7.0.2", "5.0.4", "7.0.4", "9.0", "9.0.2", "9.0.4", "9.0.6", "7.0.6", "11.0.8", "icosahedron20", "cube41", "lpac41", "srst25"];
     return names[Math.max(0, Math.min(names.length - 1, i))];
 }
 
 function layoutIndexForName(name) {
-    for (var i = 0; i < 27; i++) if (layoutNameForIndex(i) === name) return i;
+    for (var i = 0; i < 30; i++) if (layoutNameForIndex(i) === name) return i;
     return 9;
 }
 

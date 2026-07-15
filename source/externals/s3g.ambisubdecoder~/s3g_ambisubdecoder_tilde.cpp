@@ -8,18 +8,23 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <new>
 
 namespace {
 
 constexpr long kMaxInputs = s3g::kAmbiSubDecoderMaxInputChannels;
 constexpr long kMaxOutputs = s3g::kAmbiSubDecoderMaxSubs;
 
-struct t_s3g_ambisubdecoder {
-    t_pxobject object;
+struct AmbiSubDecoderImpl {
     s3g::AmbiSubDecoder decoder;
     s3g::AmbiSubDecoderParams params;
     std::array<float, kMaxInputs> frameIn {};
     std::array<float, kMaxOutputs> frameOut {};
+};
+
+struct t_s3g_ambisubdecoder {
+    t_pxobject object;
+    AmbiSubDecoderImpl* impl = nullptr;
     void* infoOutlet = nullptr;
     double sampleRate = 48000.0;
     long inputCount = 16;
@@ -83,14 +88,14 @@ void notify_attr(t_s3g_ambisubdecoder* x, const char* name)
 
 void sync_attrs(t_s3g_ambisubdecoder* x)
 {
-    if (!x) return;
-    x->params = x->decoder.params();
-    x->order = x->params.order;
-    x->subcount = x->params.subCount;
-    x->cutoff = x->params.cutoffHz;
-    x->width = x->params.directionWidth;
-    x->output = x->params.outputGainDb;
-    x->bypass = x->params.bypass ? 1.0 : 0.0;
+    if (!x || !x->impl) return;
+    x->impl->params = x->impl->decoder.params();
+    x->order = x->impl->params.order;
+    x->subcount = x->impl->params.subCount;
+    x->cutoff = x->impl->params.cutoffHz;
+    x->width = x->impl->params.directionWidth;
+    x->output = x->impl->params.outputGainDb;
+    x->bypass = x->impl->params.bypass ? 1.0 : 0.0;
 }
 
 void dump(t_s3g_ambisubdecoder* x)
@@ -100,17 +105,17 @@ void dump(t_s3g_ambisubdecoder* x)
     t_atom atoms[8];
     atom_setlong(atoms, x->inputCount);
     atom_setlong(atoms + 1, x->outputCount);
-    atom_setlong(atoms + 2, static_cast<long>(x->params.order));
-    atom_setlong(atoms + 3, static_cast<long>(x->params.subCount));
+    atom_setlong(atoms + 2, static_cast<long>(x->impl->params.order));
+    atom_setlong(atoms + 3, static_cast<long>(x->impl->params.subCount));
     outlet_anything(x->infoOutlet, gensym("config"), 4, atoms);
-    atom_setfloat(atoms, x->params.cutoffHz);
-    atom_setfloat(atoms + 1, x->params.directionWidth);
-    atom_setfloat(atoms + 2, x->params.outputGainDb);
-    atom_setlong(atoms + 3, x->params.bypass ? 1 : 0);
+    atom_setfloat(atoms, x->impl->params.cutoffHz);
+    atom_setfloat(atoms + 1, x->impl->params.directionWidth);
+    atom_setfloat(atoms + 2, x->impl->params.outputGainDb);
+    atom_setlong(atoms + 3, x->impl->params.bypass ? 1 : 0);
     outlet_anything(x->infoOutlet, gensym("params"), 4, atoms);
-    for (uint32_t i = 0; i < x->params.subCount; ++i) {
+    for (uint32_t i = 0; i < x->impl->params.subCount; ++i) {
         atom_setlong(atoms, static_cast<long>(i + 1u));
-        atom_setfloat(atoms + 1, s3g::AmbiSubDecoder::subAzimuth(i, x->params.subCount));
+        atom_setfloat(atoms + 1, s3g::AmbiSubDecoder::subAzimuth(i, x->impl->params.subCount));
         outlet_anything(x->infoOutlet, gensym("sub"), 2, atoms);
     }
     outlet_anything(x->infoOutlet, gensym("done"), 0, nullptr);
@@ -118,7 +123,7 @@ void dump(t_s3g_ambisubdecoder* x)
 
 void apply(t_s3g_ambisubdecoder* x)
 {
-    x->decoder.setParams(x->params);
+    x->impl->decoder.setParams(x->impl->params);
     sync_attrs(x);
     dump(x);
 }
@@ -126,18 +131,18 @@ void apply(t_s3g_ambisubdecoder* x)
 void prepare(t_s3g_ambisubdecoder* x, double sampleRate)
 {
     x->sampleRate = std::max(1.0, sampleRate);
-    x->decoder.prepare(x->sampleRate);
-    x->decoder.setParams(x->params);
+    x->impl->decoder.prepare(x->sampleRate);
+    x->impl->decoder.setParams(x->impl->params);
     x->prepared = true;
     sync_attrs(x);
 }
 
-void set_order(t_s3g_ambisubdecoder* x, double v) { x->params.order = static_cast<uint32_t>(std::clamp(v, 0.0, 7.0)); apply(x); notify_attr(x, "order"); }
-void set_subcount(t_s3g_ambisubdecoder* x, double v) { x->params.subCount = static_cast<uint32_t>(std::clamp(v, 1.0, static_cast<double>(x->outputCount))); apply(x); notify_attr(x, "subcount"); }
-void set_cutoff(t_s3g_ambisubdecoder* x, double v) { x->params.cutoffHz = static_cast<float>(v); apply(x); notify_attr(x, "cutoff"); }
-void set_width(t_s3g_ambisubdecoder* x, double v) { x->params.directionWidth = static_cast<float>(v); apply(x); notify_attr(x, "width"); }
-void set_output(t_s3g_ambisubdecoder* x, double v) { x->params.outputGainDb = static_cast<float>(v); apply(x); notify_attr(x, "output"); }
-void set_bypass(t_s3g_ambisubdecoder* x, double v) { x->params.bypass = v != 0.0; apply(x); notify_attr(x, "bypass"); }
+void set_order(t_s3g_ambisubdecoder* x, double v) { x->impl->params.order = static_cast<uint32_t>(std::clamp(v, 0.0, 7.0)); apply(x); notify_attr(x, "order"); }
+void set_subcount(t_s3g_ambisubdecoder* x, double v) { x->impl->params.subCount = static_cast<uint32_t>(std::clamp(v, 1.0, static_cast<double>(x->outputCount))); apply(x); notify_attr(x, "subcount"); }
+void set_cutoff(t_s3g_ambisubdecoder* x, double v) { x->impl->params.cutoffHz = static_cast<float>(v); apply(x); notify_attr(x, "cutoff"); }
+void set_width(t_s3g_ambisubdecoder* x, double v) { x->impl->params.directionWidth = static_cast<float>(v); apply(x); notify_attr(x, "width"); }
+void set_output(t_s3g_ambisubdecoder* x, double v) { x->impl->params.outputGainDb = static_cast<float>(v); apply(x); notify_attr(x, "output"); }
+void set_bypass(t_s3g_ambisubdecoder* x, double v) { x->impl->params.bypass = v != 0.0; apply(x); notify_attr(x, "bypass"); }
 
 t_max_err attr_order(t_s3g_ambisubdecoder* x, void*, long argc, t_atom* argv) { set_order(x, atom_double_at(argc, argv, 0, x->order)); return MAX_ERR_NONE; }
 t_max_err attr_subcount(t_s3g_ambisubdecoder* x, void*, long argc, t_atom* argv) { set_subcount(x, atom_double_at(argc, argv, 0, x->subcount)); return MAX_ERR_NONE; }
@@ -148,16 +153,17 @@ t_max_err attr_bypass(t_s3g_ambisubdecoder* x, void*, long argc, t_atom* argv) {
 
 void dsp64(t_s3g_ambisubdecoder* x, t_object* dsp64, short*, double sampleRate, long, long)
 {
+    if (!x || !x->impl) return;
     if (!x->prepared || sampleRate != x->sampleRate) prepare(x, sampleRate);
     object_method(dsp64, gensym("dsp_add64"), x, perform64, 0, nullptr);
 }
 
 void perform64(t_s3g_ambisubdecoder* x, t_object*, double** ins, long numins, double** outs, long numouts, long frames, long, void*)
 {
-    if (!x || !x->prepared) return;
+    if (!x || !x->impl || !x->prepared) return;
     const long inCount = std::min<long>({ x->inputCount, numins, kMaxInputs });
     const long outCount = std::min<long>({ x->outputCount, numouts, kMaxOutputs });
-    x->decoder.processBlock(ins,
+    x->impl->decoder.processBlock(ins,
                             outs,
                             static_cast<uint32_t>(inCount),
                             static_cast<uint32_t>(outCount),
@@ -186,12 +192,17 @@ void* ambisubdecoder_new(t_symbol*, long argc, t_atom* argv)
 {
     auto* x = static_cast<t_s3g_ambisubdecoder*>(object_alloc(s_class));
     if (!x) return nullptr;
+    x->impl = new (std::nothrow) AmbiSubDecoderImpl();
+    if (!x->impl) {
+        object_free(reinterpret_cast<t_object*>(x));
+        return nullptr;
+    }
     const long order = std::clamp(atom_long_at(argc, argv, 0, 3), 0L, 7L);
     x->inputCount = ambi_channels_for_order(order);
     x->outputCount = std::clamp(atom_long_at(argc, argv, 1, 1), 1L, kMaxOutputs);
     x->mc = attr_long_arg(argc, argv, "mc", 0) != 0 ? 1 : 0;
-    x->params.order = static_cast<uint32_t>(order);
-    x->params.subCount = static_cast<uint32_t>(x->outputCount);
+    x->impl->params.order = static_cast<uint32_t>(order);
+    x->impl->params.subCount = static_cast<uint32_t>(x->outputCount);
     x->infoOutlet = outlet_new(reinterpret_cast<t_object*>(x), nullptr);
     if (x->mc) {
         dsp_setup(reinterpret_cast<t_pxobject*>(x), 1);
@@ -206,7 +217,7 @@ void* ambisubdecoder_new(t_symbol*, long argc, t_atom* argv)
     return x;
 }
 
-void free_object(t_s3g_ambisubdecoder* x) { dsp_free(reinterpret_cast<t_pxobject*>(x)); }
+void free_object(t_s3g_ambisubdecoder* x) { dsp_free(reinterpret_cast<t_pxobject*>(x)); delete x->impl; x->impl = nullptr; }
 
 } // namespace
 
@@ -231,6 +242,13 @@ extern "C" void ext_main(void*)
     CLASS_ATTR_DOUBLE(c, "output", 0, t_s3g_ambisubdecoder, output); CLASS_ATTR_ACCESSORS(c, "output", nullptr, attr_output); CLASS_ATTR_FILTER_CLIP(c, "output", -60, 18);
     CLASS_ATTR_DOUBLE(c, "bypass", 0, t_s3g_ambisubdecoder, bypass); CLASS_ATTR_ACCESSORS(c, "bypass", nullptr, attr_bypass); CLASS_ATTR_FILTER_CLIP(c, "bypass", 0, 1);
     CLASS_ATTR_LONG(c, "mc", 0, t_s3g_ambisubdecoder, mc);
+    CLASS_ATTR_DEFAULT(c, "order", 0, "3"); CLASS_ATTR_SAVE(c, "order", 0);
+    CLASS_ATTR_DEFAULT(c, "subcount", 0, "1"); CLASS_ATTR_SAVE(c, "subcount", 0);
+    CLASS_ATTR_DEFAULT(c, "cutoff", 0, "90."); CLASS_ATTR_SAVE(c, "cutoff", 0);
+    CLASS_ATTR_DEFAULT(c, "width", 0, "1."); CLASS_ATTR_SAVE(c, "width", 0);
+    CLASS_ATTR_DEFAULT(c, "output", 0, "0."); CLASS_ATTR_SAVE(c, "output", 0);
+    CLASS_ATTR_DEFAULT(c, "bypass", 0, "0"); CLASS_ATTR_SAVE(c, "bypass", 0);
+    CLASS_ATTR_DEFAULT(c, "mc", 0, "0"); CLASS_ATTR_SAVE(c, "mc", 0);
     class_dspinit(c);
     class_register(CLASS_BOX, c);
     s_class = c;

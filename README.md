@@ -28,6 +28,29 @@ Highlights:
 - V8UI field display that follows the object state.
 - Max MC wrapper support through `@mc 1`.
 
+### `s3g.dbappan~`, `s3g.lbappan~`, `s3g.vbappan~`
+
+Alternative direct panners using the same curated layout set and source-control
+messages as `s3g.layoutpan~`.
+
+```max
+s3g.dbappan~ <inputs> <outputs> <layout>
+s3g.lbappan~ <inputs> <outputs> <layout>
+s3g.vbappan~ <inputs> <outputs> <layout>
+```
+
+Highlights:
+
+- `s3g.dbappan~` uses distance-based amplitude panning.
+- `s3g.lbappan~` uses layer/local-lobe amplitude panning.
+- `s3g.vbappan~` uses vector-base amplitude panning.
+- LBAP and VBAP use the shared topology-aware solver from `s3g-dsp`.
+- For 2D layouts, elevation becomes a smooth level change into silent
+  imaginary top/bottom speakers instead of a no-op.
+- For partial 3D layouts, imaginary solver points improve weak topology while
+  real output channel counts remain unchanged.
+- Max MC wrapper support is available through `@mc 1`.
+
 ### `s3g.subxover~`
 
 Subwoofer crossover and low-frequency send utility for speaker arrays.
@@ -48,8 +71,11 @@ matches the current Max object and CLAP Ambi Speaker Decoder layout set:
 - `quad`
 - `cube8`
 - `cube17`
+- `cube41`
+- `lpac41`
 - `dome24`
 - `dome25`
+- `srst25`
 - `quad+oh`
 - `sphere24`
 - `dodeca12`
@@ -66,6 +92,31 @@ field and place sub channel 1 at -45 degrees, then proceed clockwise.
 
 Post-decoder high-pass filter for main speaker arrays. Intended to pair with
 `s3g.ambisubdecoder~` when low-frequency content is decoded separately.
+
+### `s3g.arraydelay~`
+
+Per-channel speaker calibration delay for physical array alignment.
+
+```max
+s3g.arraydelay~ <channels>
+s3g.arraydelay~ <channels> @mc 1
+```
+
+Use `delay <channel> <ms>` for a single speaker or `delays <list>` to paste a
+calibration table in channel order.
+
+### `s3g.arraytrim~`
+
+Per-channel speaker calibration trim for physical array balancing.
+
+```max
+s3g.arraytrim~ <channels>
+s3g.arraytrim~ <channels> @mc 1
+```
+
+Use `gain <channel> <dB>` / `trim <channel> <dB>` for one speaker, or
+`gains <list>` to paste a gain table in channel order. `mute`, `mutes`,
+`invert`, and `inverts` support channel mute and polarity checks.
 
 ### `s3g.ambigrain~`
 

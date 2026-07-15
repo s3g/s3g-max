@@ -59,6 +59,51 @@ function defaultSource(i) {
     return { id: i + 1, az: az, el: 0, distance: 1, gain: 0, mute: 0, solo: 0 };
 }
 
+function cube41Xyz() {
+    return [
+        [-0.6,1,0],[-0.2,1,0],[0.2,1,0],[0.6,1,0],[1,0.6,0],[1,0.2,0],[1,-0.2,0],[1,-0.6,0],
+        [0.6,-1,0],[0.2,-1,0],[-0.2,-1,0],[-0.6,-1,0],[-1,-0.6,0],[-1,-0.2,0],[-1,0.2,0],[-1,0.6,0],
+        [-0.45,1,0.3333333333],[0,1,0.3333333333],[0.45,1,0.3333333333],
+        [1,0.45,0.3333333333],[1,0,0.3333333333],[1,-0.45,0.3333333333],
+        [0.45,-1,0.3333333333],[0,-1,0.3333333333],[-0.45,-1,0.3333333333],
+        [-1,-0.45,0.3333333333],[-1,0,0.3333333333],[-1,0.45,0.3333333333],
+        [-0.25,1,0.6666666667],[0.25,1,0.6666666667],[1,0.25,0.6666666667],[1,-0.25,0.6666666667],
+        [0.25,-1,0.6666666667],[-0.25,-1,0.6666666667],[-1,-0.25,0.6666666667],[-1,0.25,0.6666666667],
+        [-0.46,0.46,1],[0.46,0.46,1],[0.46,-0.46,1],[-0.46,-0.46,1],[0,0,1]
+    ];
+}
+
+function lpac41Xyz() {
+    return [
+        [0.976131199,0.656268998,0],[0.932012275,0.216888632,0],[0.932012275,-0.224256492,0],[0.976131199,-0.665445734,0],
+        [0.637871407,-0.841921431,0],[0.189314304,-0.841921431,0],[-0.202197030,-0.841921431,0],[-0.604782213,-0.797802507,0],
+        [-0.976131199,-0.661783864,0],[-0.932012275,-0.224256492,0],[-0.932012275,0.220594621,0],[-0.976131199,0.661783864,0],
+        [-0.604782213,0.794140636,0],[-0.202197030,0.838259561,0],[0.189314304,0.838259561,0],[0.637871407,0.838259561,0],
+        [0.976131199,0.426453522,0.4559249631],[0.976131199,0,0.4559249631],[0.976131199,-0.441189242,0.4559249631],
+        [0.437483253,-0.841921431,0.4559249631],[-0.090046724,-0.841921431,0.4559249631],[-0.446704108,-0.841921431,0.4559249631],
+        [-0.976131199,-0.375010856,0.4559249631],[-0.976131199,0,0.4559249631],[-0.976131199,0.375010856,0.4559249631],
+        [-0.446704108,0.838259561,0.4559249631],[-0.077208117,0.838259561,0.4559249631],[0.437483253,0.838259561,0.4559249631],
+        [0.976131199,0.235286223,0.8529952812],[0.976131199,-0.235286223,0.8529952812],
+        [0.191167299,-0.841921431,0.8529952812],[-0.213226761,-0.841921431,0.8529952812],
+        [-0.999999537,-0.216888632,0.8529952812],[-0.999999537,0.154416235,0.8529952812],[-0.213226761,0.838259561,0.8529952812],
+        [0.191167299,0.838259561,0.8529952812],
+        [0.483455172,0.441189242,0.9081439365],[0.483455172,-0.441189242,0.9081439365],
+        [-0.479793301,-0.441189242,0.9081439365],[-0.479793301,0.441189242,0.9081439365],[0,0,0.9081439365]
+    ];
+}
+
+function srst25Xyz() {
+    return [
+        [1.442,2.498,0],[2.498,1.442,0],[2.885,0,0],[2.498,-1.442,0],
+        [1.442,-2.498,0],[0,-2.885,0],[-1.442,-2.498,0],[-2.498,-1.442,0],
+        [-2.885,0,0],[-2.498,1.442,0],[-1.442,2.498,0],[0,2.885,0],
+        [1.763,1.763,1.559],[2.493,0,1.559],[1.763,-1.763,1.559],[0,-2.493,1.559],
+        [-1.763,-1.763,1.559],[-2.493,0,1.559],[-1.763,1.763,1.559],[0,2.493,1.559],
+        [1.152,0,2.671],[0,-1.152,2.671],[-1.152,0,2.671],[0,1.152,2.671],
+        [0,0,2.941]
+    ];
+}
+
 function applyLayoutPreset(name) {
     var n = normalizeLayoutName(name);
     layoutName = n;
@@ -90,6 +135,16 @@ function applyLayoutPreset(name) {
             [0, 0, 1]
         ];
         for (var c = 0; c < pts.length; c++) setSpeakerFromXyz(c, pts[c][0], pts[c][1], pts[c][2]);
+    } else if (n == "cube41") {
+        activeSpeakers = 41;
+        outputCount = 41;
+        var cube41 = cube41Xyz();
+        for (var c41 = 0; c41 < cube41.length; c41++) setSpeakerFromXyz(c41, cube41[c41][0], cube41[c41][1], cube41[c41][2]);
+    } else if (n == "lpac41") {
+        activeSpeakers = 41;
+        outputCount = 41;
+        var lpac41 = lpac41Xyz();
+        for (var l41 = 0; l41 < lpac41.length; l41++) setSpeakerFromXyz(l41, lpac41[l41][0], lpac41[l41][1], lpac41[l41][2]);
     } else if (n == "dodeca12") {
         activeSpeakers = 12;
         outputCount = 12;
@@ -117,6 +172,14 @@ function applyLayoutPreset(name) {
         activeSpeakers = 25;
         outputCount = 25;
         setSrstDome(1);
+    } else if (n == "srst25") {
+        activeSpeakers = 25;
+        outputCount = 25;
+        var srst25 = srst25Xyz();
+        for (var s25 = 0; s25 < srst25.length; s25++) {
+            setSpeakerFromRoomXyz(s25, srst25[s25][0], srst25[s25][1], srst25[s25][2]);
+            speakers[s25].distance = 1;
+        }
     } else if (n == "dome24") {
         activeSpeakers = 24;
         outputCount = 24;
@@ -316,12 +379,23 @@ function setSpeakerFromXyz(index, x, y, z) {
     setSpeakerAt(index, az, el, distance);
 }
 
+function setSpeakerFromRoomXyz(index, x, y, z) {
+    var h = Math.sqrt(x * x + y * y);
+    var distance = Math.sqrt(x * x + y * y + z * z);
+    var az = -Math.atan2(x, y) * 180 / Math.PI;
+    var el = Math.atan2(z, h) * 180 / Math.PI;
+    setSpeakerAt(index, az, el, distance);
+}
+
 function normalizeLayoutName(name) {
     if (typeof name == "number") return layoutNameFromNumber(name);
     var n = String(name).toLowerCase();
     n = n.replace(/^\s+|\s+$/g, "");
     n = n.replace(/\s+/g, "");
     if (n == "cube") return "cube8";
+    if (n == "cube41") return "cube41";
+    if (n == "lpac41") return "lpac41";
+    if (n == "srst25") return "srst25";
     if (n == "dodeca") return "dodeca12";
     if (n == "icosa20" || n == "ico20") return "icosahedron20";
     if (n == "dome") return "dome24";
@@ -362,7 +436,7 @@ function layoutNameFromNumber(value) {
 }
 
 function layoutNameForIndex(index) {
-    var names = ["custom", "cube8", "cube17", "dodeca12", "dome24", "dome25", "double16", "double20", "octo", "quad", "quad+oh", "ring12", "ring16", "5.0", "6.0", "7.0", "5.0.2", "7.0.2", "5.0.4", "7.0.4", "9.0", "9.0.2", "9.0.4", "9.0.6", "7.0.6", "11.0.8", "icosahedron20"];
+    var names = ["custom", "cube8", "cube17", "dodeca12", "dome24", "dome25", "double16", "double20", "octo", "quad", "quad+oh", "ring12", "ring16", "5.0", "6.0", "7.0", "5.0.2", "7.0.2", "5.0.4", "7.0.4", "9.0", "9.0.2", "9.0.4", "9.0.6", "7.0.6", "11.0.8", "icosahedron20", "cube41", "lpac41", "srst25"];
     var i = clamp(Math.round(Number(index)), 0, names.length - 1);
     return names[i];
 }
@@ -701,10 +775,8 @@ function drawSpeakers(projected) {
         set(0.78, 0.78, 0.78, 0.42 + 0.32 * front);
         mgraphics.select_font_face("Arial");
         mgraphics.set_font_size(activeSpeakers > 32 ? 7 : 8);
-        if (activeSpeakers <= 32 || front > 0.55) {
-            mgraphics.move_to(s.x + size + 2, s.y + 3);
-            mgraphics.show_text(String(s.id));
-        }
+        mgraphics.move_to(s.x + size + 2, s.y + 3);
+        mgraphics.show_text(String(s.id));
     }
 }
 
