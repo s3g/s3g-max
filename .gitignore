@@ -1,0 +1,8 @@
+build*/
+_deps/
+*.xcodeproj
+*.xcworkspace
+*.mxo
+*.mxe64
+.DS_Store
+

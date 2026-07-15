@@ -1,0 +1,9 @@
+{
+  "author": "s3g",
+  "name": "s3g-max",
+  "displayname": "s3g Max Externals",
+  "version": "0.1.0",
+  "description": "Native Max/MSP externals wrapping shared s3g-dsp C++ engines.",
+  "tags": ["audio", "msp", "multichannel", "s3g"]
+}
+
