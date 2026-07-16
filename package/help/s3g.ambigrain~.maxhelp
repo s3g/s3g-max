@@ -159,8 +159,8 @@
                     "numinlets": 1,
                     "numoutlets": 2,
                     "outlettype": [ "multichannelsignal", "" ],
-                    "patching_rect": [ 30.0, 172.0, 446.0, 22.0 ],
-                    "text": "s3g.ambigrain~ s3g_ambigrain_src 3 @density 28 @grain 90 @output -12 @mc 1"
+                    "patching_rect": [ 30.0, 172.0, 520.0, 22.0 ],
+                    "text": "s3g.ambigrain~ s3g_ambigrain_src 3 @density 28 @grain 90 @scanspeed 1. @output -12 @mc 1"
                 }
             },
             {
@@ -247,7 +247,7 @@
             },
             {
                 "box": {
-                    "attr": "scan",
+                    "attr": "scanspeed",
                     "id": "attrscan",
                     "maxclass": "attrui",
                     "numinlets": 1,

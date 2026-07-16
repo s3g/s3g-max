@@ -238,7 +238,13 @@ void set_mode(t_s3g_ambigrain* x, double v) { x->impl->params.mode = static_cast
 void set_density(t_s3g_ambigrain* x, double v) { x->impl->params.density = static_cast<float>(v); apply(x); notify_attr(x, "density"); }
 void set_grain(t_s3g_ambigrain* x, double v) { x->impl->params.grainMs = static_cast<float>(v); apply(x); notify_attr(x, "grain"); }
 void set_position(t_s3g_ambigrain* x, double v) { x->impl->params.sourcePosition = static_cast<float>(v); apply(x); notify_attr(x, "position"); }
-void set_scan(t_s3g_ambigrain* x, double v) { x->impl->params.scanSpeed = static_cast<float>(v); apply(x); notify_attr(x, "scan"); }
+void set_scan(t_s3g_ambigrain* x, double v)
+{
+    x->impl->params.scanSpeed = static_cast<float>(v);
+    apply(x);
+    notify_attr(x, "scan");
+    notify_attr(x, "scanspeed");
+}
 void set_jitter(t_s3g_ambigrain* x, double v) { x->impl->params.positionJitter = static_cast<float>(v); apply(x); notify_attr(x, "jitter"); }
 void set_rate(t_s3g_ambigrain* x, double v) { x->impl->params.rate = static_cast<float>(v); apply(x); notify_attr(x, "rate"); }
 void set_ratejitter(t_s3g_ambigrain* x, double v) { x->impl->params.rateJitterOct = static_cast<float>(v); apply(x); notify_attr(x, "ratejitter"); }
@@ -257,6 +263,7 @@ t_max_err attr_density(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set
 t_max_err attr_grain(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_grain(x, atom_double_at(argc, argv, 0, x->grain)); return MAX_ERR_NONE; }
 t_max_err attr_position(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_position(x, atom_double_at(argc, argv, 0, x->position)); return MAX_ERR_NONE; }
 t_max_err attr_scan(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_scan(x, atom_double_at(argc, argv, 0, x->scan)); return MAX_ERR_NONE; }
+t_max_err attr_scanspeed(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_scan(x, atom_double_at(argc, argv, 0, x->scan)); return MAX_ERR_NONE; }
 t_max_err attr_jitter(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_jitter(x, atom_double_at(argc, argv, 0, x->jitter)); return MAX_ERR_NONE; }
 t_max_err attr_rate(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_rate(x, atom_double_at(argc, argv, 0, x->rate)); return MAX_ERR_NONE; }
 t_max_err attr_ratejitter(t_s3g_ambigrain* x, void*, long argc, t_atom* argv) { set_ratejitter(x, atom_double_at(argc, argv, 0, x->ratejitter)); return MAX_ERR_NONE; }
@@ -360,6 +367,7 @@ extern "C" void ext_main(void*)
     class_addmethod(c, reinterpret_cast<method>(set_grain), "grain", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(set_position), "position", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(set_scan), "scan", A_FLOAT, 0);
+    class_addmethod(c, reinterpret_cast<method>(set_scan), "scanspeed", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(set_jitter), "jitter", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(set_rate), "rate", A_FLOAT, 0);
     class_addmethod(c, reinterpret_cast<method>(set_ratejitter), "ratejitter", A_FLOAT, 0);
@@ -378,6 +386,7 @@ extern "C" void ext_main(void*)
     CLASS_ATTR_DOUBLE(c, "grain", 0, t_s3g_ambigrain, grain); CLASS_ATTR_ACCESSORS(c, "grain", nullptr, attr_grain); CLASS_ATTR_FILTER_CLIP(c, "grain", 8, 4000);
     CLASS_ATTR_DOUBLE(c, "position", 0, t_s3g_ambigrain, position); CLASS_ATTR_ACCESSORS(c, "position", nullptr, attr_position); CLASS_ATTR_FILTER_CLIP(c, "position", 0, 1);
     CLASS_ATTR_DOUBLE(c, "scan", 0, t_s3g_ambigrain, scan); CLASS_ATTR_ACCESSORS(c, "scan", nullptr, attr_scan); CLASS_ATTR_FILTER_CLIP(c, "scan", 0, 4);
+    CLASS_ATTR_DOUBLE(c, "scanspeed", 0, t_s3g_ambigrain, scan); CLASS_ATTR_ACCESSORS(c, "scanspeed", nullptr, attr_scanspeed); CLASS_ATTR_FILTER_CLIP(c, "scanspeed", 0, 4);
     CLASS_ATTR_DOUBLE(c, "jitter", 0, t_s3g_ambigrain, jitter); CLASS_ATTR_ACCESSORS(c, "jitter", nullptr, attr_jitter); CLASS_ATTR_FILTER_CLIP(c, "jitter", 0, 1);
     CLASS_ATTR_DOUBLE(c, "rate", 0, t_s3g_ambigrain, rate); CLASS_ATTR_ACCESSORS(c, "rate", nullptr, attr_rate); CLASS_ATTR_FILTER_CLIP(c, "rate", 0.125, 4);
     CLASS_ATTR_DOUBLE(c, "ratejitter", 0, t_s3g_ambigrain, ratejitter); CLASS_ATTR_ACCESSORS(c, "ratejitter", nullptr, attr_ratejitter); CLASS_ATTR_FILTER_CLIP(c, "ratejitter", 0, 1);
@@ -395,6 +404,7 @@ extern "C" void ext_main(void*)
     CLASS_ATTR_DEFAULT(c, "grain", 0, "90."); CLASS_ATTR_SAVE(c, "grain", 0);
     CLASS_ATTR_DEFAULT(c, "position", 0, "0."); CLASS_ATTR_SAVE(c, "position", 0);
     CLASS_ATTR_DEFAULT(c, "scan", 0, "1."); CLASS_ATTR_SAVE(c, "scan", 0);
+    CLASS_ATTR_DEFAULT(c, "scanspeed", 0, "1.");
     CLASS_ATTR_DEFAULT(c, "jitter", 0, "0.12"); CLASS_ATTR_SAVE(c, "jitter", 0);
     CLASS_ATTR_DEFAULT(c, "rate", 0, "1."); CLASS_ATTR_SAVE(c, "rate", 0);
     CLASS_ATTR_DEFAULT(c, "ratejitter", 0, "0.04"); CLASS_ATTR_SAVE(c, "ratejitter", 0);
